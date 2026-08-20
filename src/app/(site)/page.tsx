@@ -62,36 +62,58 @@ export default function HomePage() {
         handoff={handoff}
       />
 
-      <StickyMediaSequence
-        isFeaturedSlot
-        numbered
-        eyebrow={settings.locations}
-        heading={copy.featured_heading}
-        intro={copy.featured_intro}
-        items={projects.map((project) => ({
-          id: project.id,
-          title: project.couple_names,
-          meta: [project.location, project.wedding_date].filter(Boolean).join(' · '),
-          body: project.description,
-          image: project.cover_url,
-          focal: project.focal,
-          href: `/portfolio/${project.slug}`,
-        }))}
-      />
+      <div className="bg-ivory pb-16 text-center">
+        <StickyMediaSequence
+          isFeaturedSlot
+          numbered
+          eyebrow={settings.locations}
+          heading={copy.featured_heading}
+          intro={copy.featured_intro}
+          items={projects.slice(0, 2).map((project) => ({
+            id: project.id,
+            title: project.couple_names,
+            meta: [project.location, project.wedding_date].filter(Boolean).join(' · '),
+            body: project.description,
+            image: project.cover_url,
+            focal: project.focal,
+            href: `/portfolio/${project.slug}`,
+          }))}
+        />
 
-      <StickyMediaSequence
-        theme="ink"
-        mediaSide="right"
-        eyebrow="Coverage"
-        heading={copy.services_heading}
-        intro={copy.services_intro}
-        items={services.map((service) => ({
-          id: service.id,
-          title: service.title,
-          body: service.description,
-          image: service.image_url,
-        }))}
-      />
+        {projects.length > 2 ? (
+          <a
+            href="/portfolio"
+            className="inline-block border border-ink/40 px-8 py-3 text-[11px] uppercase tracking-[0.3em] text-ink transition-all duration-300 hover:bg-ink hover:text-ivory"
+          >
+            View all weddings →
+          </a>
+        ) : null}
+      </div>
+
+      <div className="bg-ink pb-16 text-center">
+        <StickyMediaSequence
+          theme="ink"
+          mediaSide="right"
+          eyebrow="Coverage"
+          heading={copy.services_heading}
+          intro={copy.services_intro}
+          items={services.slice(0, 2).map((service) => ({
+            id: service.id,
+            title: service.title,
+            body: service.description,
+            image: service.image_url,
+          }))}
+        />
+
+        {services.length > 2 ? (
+          <a
+            href="/services"
+            className="inline-block border border-ivory/40 px-8 py-3 text-[11px] uppercase tracking-[0.3em] text-ivory transition-all duration-300 hover:bg-ivory hover:text-ink"
+          >
+            View all services →
+          </a>
+        ) : null}
+      </div>
 
       <StatsCounters items={getStats()} />
 
