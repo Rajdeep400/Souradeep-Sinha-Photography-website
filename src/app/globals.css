@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  scroll-behavior: auto;
+  background: #0a0908;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+body {
+  @apply bg-ivory text-ink font-body antialiased;
+  overflow-x: hidden;
+}
+
+/* ---------- cinematic hero primitives ---------- */
+
+/* Frame geometry is driven by unitless CSS vars so GSAP only touches
+   compositor-friendly properties (clip-path / transform / opacity). */
+.hero-frame {
+  --fy: 0;
+  --fx: 0;
+  --fr: 0;
+  clip-path: inset(
+    calc(var(--fy) * 1vh) calc(var(--fx) * 1vw) calc(var(--fy) * 1vh) calc(var(--fx) * 1vw)
+      round calc(var(--fr) * 1px)
+  );
+  will-change: clip-path, transform;
+}
+
+.hero-matte {
+  --fy: 0;
+  --fx: 0;
+  clip-path: inset(
+    calc(var(--fy) * 1vh - 12px) calc(var(--fx) * 1vw - 12px) calc(var(--fy) * 1vh - 12px)
+      calc(var(--fx) * 1vw - 12px)
+  );
+  will-change: clip-path, opacity;
+}
+
+/* Alpona-derived wipe: the drawn stroke and the reveal share one progress var. */
+.hero-wipe {
+  --wipe: 0;
+  clip-path: polygon(
+    0 0,
+    calc(var(--wipe) * 1%) 0,
+    calc(var(--wipe) * 1% + 6%) 100%,
+    0 100%
+  );
+  will-change: clip-path, transform;
+}
+
+.hero-img {
+  @apply h-full w-full object-cover;
+  object-position: var(--focal, 50% 42%);
+  /* zoom set by the studio crop editor; 1 = untouched */
+  transform: scale(var(--zoom, 1));
+}
+
+.hero-vignette {
+  background:
+    radial-gradient(120% 85% at 50% 45%, transparent 30%, rgba(6, 5, 5, 0.55) 78%, rgba(6, 5, 5, 0.9) 100%);
+}
+
+.hero-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.14;
+}
+
+.layer {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Sequence media swap (Featured Weddings / Services) */
+.seq-media {
+  --reveal: 100;
+  clip-path: inset(0 0 0 calc(var(--reveal) * 1%));
+  will-change: clip-path, transform;
+}
+
+.card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-frame,
+  .hero-matte,
+  .hero-wipe,
+  .seq-media {
+    clip-path: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
