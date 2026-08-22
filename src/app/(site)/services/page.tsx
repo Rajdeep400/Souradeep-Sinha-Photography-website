@@ -1,42 +1,63 @@
 import type { Metadata } from 'next';
-import { ServicesScenes } from '@/components/services/ServicesScenes';
-import { getHomeContent, getServices, getSettings, siteUrl } from '@/lib/content';
+
+import {
+  getServicePackages,
+  getServices,
+  siteUrl,
+} from '@/lib/content';
+
+import {
+  ServicesCatalog,
+  type PublicService,
+} from '@/components/services/ServicesCatalog';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Wedding Photography Services | Souradeep Sinha Photography, Kolkata',
+  title:
+    'Wedding Photography Services | Souradeep Sinha Photography, Kolkata',
+
   description:
-    'Bengali wedding photography, pre-wedding shoots and wedding films. Based in Kolkata, available across India.',
-  alternates: { canonical: `${siteUrl()}/services` },
-  openGraph: { title: 'Wedding Photography Services — Souradeep Sinha Photography' },
+    'Wedding photography, pre-wedding shoots and photography packages by Souradeep Sinha Photography. Based in Kolkata, available across India.',
+
+  alternates: {
+    canonical: `${siteUrl()}/services`,
+  },
+
+  openGraph: {
+    title:
+      'Photography Services — Souradeep Sinha Photography',
+  },
 };
 
 export default function ServicesPage() {
   const services = getServices();
-  const home = getHomeContent();
-  const settings = getSettings();
 
-  return (
-    <div className="bg-ivory">
-      <section className="mx-auto w-full max-w-7xl px-5 pb-16 pt-32 sm:px-8 sm:pt-40">
-        <p className="text-[10px] uppercase tracking-[0.45em] text-ink/45">{settings.locations}</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight sm:text-6xl">
-          {home.services_heading}
-        </h1>
-        <p className="mt-5 max-w-xl text-ink/65">{home.services_intro}</p>
-      </section>
+  const data: PublicService[] = services.map(
+    (service) => ({
+      id: service.id,
+      title: service.title,
+      description: service.description,
+      image_url: service.image_url,
+      focal: service.focal || '',
+      zoom: service.zoom || 1,
 
-      <ServicesScenes
-        services={services.map((service) => ({
-          id: service.id,
-          title: service.title,
-          description: service.description,
-          image_url: service.image_url,
-          focal: service.focal,
-          zoom: service.zoom,
-        }))}
-      />
-    </div>
+      packages: getServicePackages(service.id).map(
+        (pkg) => ({
+          id: pkg.id,
+          service_id: pkg.service_id,
+          title: pkg.title,
+          subtitle: pkg.subtitle,
+          description: pkg.description,
+          price: pkg.price,
+          image_url: pkg.image_url,
+          focal: pkg.focal || '',
+          zoom: pkg.zoom || 1,
+          featured: pkg.featured,
+        }),
+      ),
+    }),
   );
+
+  return <ServicesCatalog services={data} />;
 }

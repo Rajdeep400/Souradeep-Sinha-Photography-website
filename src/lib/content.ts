@@ -51,6 +51,50 @@ export const getServices = (onlyVisible = true) =>
     `SELECT * FROM services ${onlyVisible ? 'WHERE visible = 1' : ''} ORDER BY sort_order, id`,
   );
 
+export type ServicePackage = {
+  id: number;
+  service_id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  price: string;
+  image_url: string | null;
+  focal: string;
+  zoom: number;
+  featured: number;
+  visible: number;
+  sort_order: number;
+};
+
+export const getServicePackages = (
+  serviceId?: number,
+  onlyVisible = true,
+) => {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (serviceId !== undefined) {
+    conditions.push('service_id = ?');
+    params.push(serviceId);
+  }
+
+  if (onlyVisible) {
+    conditions.push('visible = 1');
+  }
+
+  const where =
+    conditions.length > 0
+      ? `WHERE ${conditions.join(' AND ')}`
+      : '';
+
+  return all<ServicePackage>(
+    `SELECT * FROM service_packages
+     ${where}
+     ORDER BY service_id, sort_order, id`,
+    params,
+  );
+};
+
 export const getWhyUs = () =>
   all<{ id: number; title: string; description: string }>(
     'SELECT * FROM why_us ORDER BY sort_order, id',

@@ -55,6 +55,65 @@ export const COLLECTIONS: Record<string, Collection> = {
       { name: 'visible', label: 'Visible', type: 'checkbox' },
     ],
   },
+  service_packages: {
+    table: 'service_packages',
+    label: 'Service Packages',
+    ordered: true,
+    parent: 'service_id',
+    mediaColumns: ['image_url'],
+
+    fields: [
+      {
+        name: 'title',
+        label: 'Package name',
+        type: 'text',
+        required: true,
+      },
+      {
+        name: 'subtitle',
+        label: 'Short subtitle',
+        type: 'text',
+      },
+      {
+        name: 'description',
+        label: 'Package details',
+        type: 'textarea',
+      },
+      {
+        name: 'price',
+        label: 'Price',
+        type: 'text',
+      },
+      {
+        name: 'image_url',
+        label: 'Package image',
+        type: 'image',
+        section: 'services',
+      },
+      {
+        name: 'focal',
+        label: 'Position package image',
+        type: 'crop',
+        imageField: 'image_url',
+        aspect: '16 / 9',
+      },
+      {
+        name: 'zoom',
+        label: 'Zoom',
+        type: 'hidden',
+      },
+      {
+        name: 'featured',
+        label: 'Featured package',
+        type: 'checkbox',
+      },
+      {
+        name: 'visible',
+        label: 'Visible',
+        type: 'checkbox',
+      },
+    ],
+  },
   why_us: {
     table: 'why_us',
     label: 'Why Us',

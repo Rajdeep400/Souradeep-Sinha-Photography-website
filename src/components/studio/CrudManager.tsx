@@ -29,6 +29,7 @@ export function CrudManager({
   uploadSection,
   addLabel = 'Add',
   childHrefBase,
+  showCreateForm = true,
 }: {
   resource: string;
   fields: ClientField[];
@@ -37,6 +38,8 @@ export function CrudManager({
   fixed?: Record<string, string | number>;
   uploadSection?: string;
   addLabel?: string;
+  showCreateForm?: boolean;
+  
   /** when set, each row links to `${childHrefBase}/${row.id}` */
   childHrefBase?: string;
 }) {
@@ -324,30 +327,39 @@ export function CrudManager({
         {rows.length === 0 ? <li className="text-sm text-ink/50">Nothing here yet.</li> : null}
       </ul>
 
-      <form onSubmit={create} className="border border-dashed border-ink/25 p-4">
-        <p className="text-sm font-medium">{addLabel}</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {visible.map((f) => (
-            <label key={f.name} className="block text-sm">
-              <span className="text-ink/70">{f.label}</span>
-              {field(
-                f,
-                draft[f.name],
-                (patch) => setDraft((prev) => ({ ...prev, ...patch })),
-                'new',
-                draft,
-              )}
-            </label>
-          ))}
-        </div>
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-4 border border-ink px-5 py-2 text-sm uppercase tracking-widest disabled:opacity-50"
-        >
-          {busy ? 'Working…' : addLabel}
-        </button>
-      </form>
+      {showCreateForm ? (
+        <form onSubmit={create} className="border border-dashed border-ink/25 p-4">
+          <p className="text-sm font-medium">{addLabel}</p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {visible.map((f) => (
+              <label key={f.name} className="block text-sm">
+                <span className="text-ink/70">{f.label}</span>
+
+                {field(
+                  f,
+                  draft[f.name],
+                  (patch) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      ...patch,
+                    })),
+                  'new',
+                  draft,
+                )}
+              </label>
+            ))}
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="mt-4 border border-ink px-5 py-2 text-sm uppercase tracking-widest disabled:opacity-50"
+          >
+            {busy ? 'Working…' : addLabel}
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 }

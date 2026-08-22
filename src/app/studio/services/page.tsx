@@ -17,6 +17,7 @@ export default async function StudioServices() {
           fields={COLLECTIONS.services.fields}
           items={getServices(false)}
           addLabel="Add service"
+          childHrefBase="/studio/services"
         />
       </div>
     </div>

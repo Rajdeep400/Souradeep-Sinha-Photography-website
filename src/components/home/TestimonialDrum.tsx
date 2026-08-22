@@ -1,7 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { ScrollTrigger, gsap, prefersReducedMotion } from '@/lib/animation/gsap';
+import Link from 'next/link';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from 'react';
 
 export type Review = {
   id: number;
@@ -11,132 +16,303 @@ export type Review = {
   rating: number;
 };
 
-/**
- * Scroll-controlled cylindrical drum. Each review sits on the surface of an
- * invisible cylinder: scroll progress rotates the drum, bringing one review to
- * the flat, readable front while the previous one curves backward and fades.
- * Pure CSS 3D + GSAP ScrollTrigger — no extra libraries.
- */
-export function TestimonialDrum({ heading, items }: { heading: string; items: Review[] }) {
-  const root = useRef<HTMLElement | null>(null);
+const MAX_REVIEWS = 6;
+const AUTOPLAY_TIME = 5000;
+
+export function TestimonialDrum({
+  heading,
+  items,
+}: {
+  heading: string;
+  items: Review[];
+}) {
+  const reviews = items.slice(0, MAX_REVIEWS);
+
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const swipeStart = useRef<number | null>(null);
 
   useEffect(() => {
-    const scope = root.current;
-    if (!scope || items.length === 0) return;
+    if (reviews.length <= 1 || paused) return;
 
-    const mm = gsap.matchMedia();
+    const timer = window.setInterval(() => {
+      setActive((current) => (current + 1) % reviews.length);
+    }, AUTOPLAY_TIME);
 
-    const build = (mode: 'desktop' | 'mobile') => () => {
-      const cards = gsap.utils.toArray<HTMLElement>('[data-review]', scope);
-      const stage = scope.querySelector('[data-drum-stage]') as HTMLElement;
-      const step = mode === 'desktop' ? 34 : 42; // degrees between reviews
-      const radius = mode === 'desktop' ? 340 : 230; // px from the axis
-      const visible = mode === 'desktop' ? 62 : 50; // degrees still on screen
+    return () => window.clearInterval(timer);
+  }, [reviews.length, paused]);
 
-      const place = (progress: number) => {
-        const active = progress * (cards.length - 1);
-        cards.forEach((card, index) => {
-          const offset = index - active;
-          const angle = offset * step;
-          const distance = Math.abs(angle);
-          const opacity = distance > visible ? 0 : 1 - Math.min(1, distance / visible) ** 1.4;
-          gsap.set(card, {
-            rotateX: -angle,
-            y: 0,
-            z: -radius,
-            transformOrigin: `50% 50% ${radius}px`,
-            opacity,
-            scale: 1 - Math.min(0.18, distance / 320),
-            zIndex: 100 - Math.round(distance),
-            pointerEvents: distance < step / 2 ? 'auto' : 'none',
-          });
-        });
-      };
+  if (reviews.length === 0) return null;
 
-      place(0);
+  function goTo(index: number) {
+    const total = reviews.length;
 
-      const trigger = ScrollTrigger.create({
-        trigger: scope,
-        start: 'top top',
-        end: () => `+=${window.innerHeight * Math.max(1.2, cards.length * (mode === 'desktop' ? 0.75 : 0.6))}`,
-        pin: stage,
-        pinSpacing: true,
-        scrub: 0.8,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => place(self.progress),
-      });
+    setActive(
+      ((index % total) + total) % total,
+    );
+  }
 
-      return () => {
-        trigger.kill();
-        gsap.set(cards, { clearProps: 'all' });
-      };
-    };
+  function getRelativePosition(index: number) {
+    const total = reviews.length;
 
-    const ok = '(prefers-reduced-motion: no-preference)';
-    mm.add(`(min-width: 768px) and ${ok}`, build('desktop'));
-    mm.add(`(max-width: 767.98px) and ${ok}`, build('mobile'));
-    mm.add('(prefers-reduced-motion: reduce)', () => {
-      gsap.set(gsap.utils.toArray('[data-review]', scope), {
-        opacity: 1,
-        position: 'relative',
-        rotateX: 0,
-        z: 0,
-      });
-    });
+    let position = index - active;
 
-    return () => mm.revert();
-  }, [items.map((i) => i.id).join(',')]);
+    if (position > total / 2) {
+      position -= total;
+    }
 
-  if (items.length === 0) return null;
+    if (position < -total / 2) {
+      position += total;
+    }
+
+    return position;
+  }
+
+  function handlePointerDown(
+    event: PointerEvent<HTMLDivElement>,
+  ) {
+    swipeStart.current = event.clientX;
+  }
+
+  function handlePointerUp(
+    event: PointerEvent<HTMLDivElement>,
+  ) {
+    if (swipeStart.current === null) return;
+
+    const movement =
+      event.clientX - swipeStart.current;
+
+    if (movement > 55) {
+      goTo(active - 1);
+    }
+
+    if (movement < -55) {
+      goTo(active + 1);
+    }
+
+    swipeStart.current = null;
+  }
 
   return (
-    <section ref={root} className="bg-ink text-ivory">
-      <div data-drum-stage className="relative flex h-[100svh] w-full flex-col justify-center overflow-hidden">
-        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-          <h2 className="font-display text-3xl sm:text-5xl">{heading}</h2>
+    <section
+      className="relative overflow-hidden bg-[#080706] text-ivory"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {/* ambient gold light */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[45%] h-[480px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25 blur-[120px]"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(188,143,70,0.40), transparent 68%)',
+        }}
+      />
+
+      {/* subtle texture lines */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px)',
+          backgroundSize: '100% 90px',
+        }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
+
+        {/* heading */}
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-[10px] uppercase tracking-[0.5em] text-gold">
+            Love notes
+          </p>
+
+          <h2 className="mt-4 font-display text-4xl sm:text-6xl">
+            {heading}
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-ivory/45">
+            Words from couples whose celebrations
+            became part of our story.
+          </p>
         </div>
 
+        {/* carousel */}
         <div
-          className="relative mx-auto mt-10 flex w-full max-w-3xl flex-1 items-center px-5 sm:px-8"
-          style={{ perspective: '1100px', perspectiveOrigin: '50% 50%' }}
+          className="relative mx-auto mt-14 h-[420px] max-w-5xl touch-pan-y sm:h-[460px]"
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
         >
-          <div className="relative h-[42vh] w-full" style={{ transformStyle: 'preserve-3d' }}>
-            {items.map((item) => (
-              <figure
-                key={item.id}
-                data-review
-                className="absolute inset-x-0 top-1/2 mx-auto w-full -translate-y-1/2 text-center"
-                style={{ transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
+          {reviews.map((review, index) => {
+            const position =
+              getRelativePosition(index);
+
+            const isActive = position === 0;
+            const isPrevious = position === -1;
+            const isNext = position === 1;
+
+            let transform =
+              'translate(-50%, -50%) scale(0.72)';
+
+            let opacity = 0;
+            let zIndex = 0;
+            let filter = 'blur(10px)';
+
+            if (isActive) {
+              transform =
+                'translate(-50%, -50%) translateX(0) rotateY(0deg) scale(1)';
+
+              opacity = 1;
+              zIndex = 30;
+              filter = 'blur(0px)';
+            }
+
+            if (isPrevious) {
+              transform =
+                'translate(-50%, -50%) translateX(-57%) rotateY(18deg) scale(0.82)';
+
+              opacity = 0.22;
+              zIndex = 10;
+              filter = 'blur(2px)';
+            }
+
+            if (isNext) {
+              transform =
+                'translate(-50%, -50%) translateX(57%) rotateY(-18deg) scale(0.82)';
+
+              opacity = 0.22;
+              zIndex = 10;
+              filter = 'blur(2px)';
+            }
+
+            return (
+              <article
+                key={review.id}
+                className="absolute left-1/2 top-1/2 w-[88%] max-w-[680px] transition-all duration-[1100ms] ease-[cubic-bezier(.16,1,.3,1)]"
+                style={{
+                  transform,
+                  opacity,
+                  filter,
+                  zIndex,
+                  pointerEvents:
+                    isActive ? 'auto' : 'none',
+                }}
               >
-                {item.image_url ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="mx-auto h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20"
-                    loading="lazy"
-                    decoding="async"
+                <div className="relative overflow-hidden border border-ivory/10 bg-[#100e0c]/95 px-7 py-10 text-center shadow-[0_30px_90px_rgba(0,0,0,.55)] sm:px-14 sm:py-12">
+
+                  {/* card glow */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(190,145,70,.12), transparent 35%, transparent 70%, rgba(190,145,70,.07))',
+                    }}
                   />
-                ) : null}
-                <blockquote className="mx-auto mt-6 max-w-2xl font-display text-2xl leading-snug sm:text-4xl">
-                  “{item.quote}”
-                </blockquote>
-                <figcaption className="mt-5 text-[11px] uppercase tracking-[0.4em] text-gold">
-                  {item.name}
-                </figcaption>
-                {item.rating > 0 ? (
-                  <p className="mt-2 text-sm text-gold" aria-label={`${item.rating} out of 5`}>
-                    {'★'.repeat(Math.min(5, Math.max(1, item.rating)))}
-                  </p>
-                ) : null}
-              </figure>
+
+                  <div className="relative">
+                    {review.image_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={review.image_url}
+                        alt={review.name}
+                        className="mx-auto h-16 w-16 rounded-full border border-gold/40 object-cover sm:h-20 sm:w-20"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-gold/35 font-display text-2xl uppercase text-gold sm:h-20 sm:w-20">
+                        {review.name.charAt(0)}
+                      </div>
+                    )}
+
+                    {review.rating > 0 ? (
+                      <div
+                        className="mt-5 text-xs tracking-[0.35em] text-gold"
+                        aria-label={`${review.rating} out of 5 stars`}
+                      >
+                        {'★'.repeat(
+                          Math.min(
+                            5,
+                            Math.max(
+                              1,
+                              Math.round(review.rating),
+                            ),
+                          ),
+                        )}
+                      </div>
+                    ) : null}
+
+                    <blockquote className="mx-auto mt-6 max-w-xl font-display text-2xl leading-[1.35] text-ivory sm:text-[34px]">
+                      “{review.quote}”
+                    </blockquote>
+
+                    <div className="mx-auto mt-7 h-px w-12 bg-gold/60" />
+
+                    <p className="mt-5 text-[10px] uppercase tracking-[0.42em] text-gold">
+                      {review.name}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        {/* controls */}
+        <div className="mt-4 flex items-center justify-center gap-6">
+          <button
+            type="button"
+            onClick={() => goTo(active - 1)}
+            aria-label="Previous review"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-ivory/15 text-ivory/60 transition duration-300 hover:border-gold hover:text-gold"
+          >
+            ←
+          </button>
+
+          <div className="flex items-center gap-2">
+            {reviews.map((review, index) => (
+              <button
+                key={review.id}
+                type="button"
+                onClick={() => goTo(index)}
+                aria-label={`Review ${index + 1}`}
+                className={`h-[3px] rounded-full transition-all duration-500 ${
+                  index === active
+                    ? 'w-8 bg-gold'
+                    : 'w-3 bg-ivory/20'
+                }`}
+              />
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={() => goTo(active + 1)}
+            aria-label="Next review"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-ivory/15 text-ivory/60 transition duration-300 hover:border-gold hover:text-gold"
+          >
+            →
+          </button>
         </div>
 
-        <p className="pb-10 text-center text-[10px] uppercase tracking-[0.4em] text-ivory/35">
-          Scroll
+        <p className="mt-4 text-center text-[9px] uppercase tracking-[0.4em] text-ivory/30">
+          {String(active + 1).padStart(2, '0')}
+          {'  /  '}
+          {String(reviews.length).padStart(2, '0')}
         </p>
+
+        <div className="mt-8 text-center">
+          <Link
+            href="/about#reviews"
+            className="inline-flex items-center gap-4 border-b border-gold/50 pb-2 text-[10px] uppercase tracking-[0.4em] text-gold transition hover:border-gold hover:text-ivory"
+          >
+            View all reviews
+            <span>→</span>
+          </Link>
+        </div>
       </div>
     </section>
   );

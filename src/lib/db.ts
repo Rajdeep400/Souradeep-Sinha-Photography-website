@@ -72,6 +72,21 @@ CREATE TABLE IF NOT EXISTS services (
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS service_packages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  subtitle TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  price TEXT NOT NULL DEFAULT '',
+  image_url TEXT,
+  focal TEXT NOT NULL DEFAULT '',
+  zoom REAL NOT NULL DEFAULT 1,
+  featured INTEGER NOT NULL DEFAULT 0,
+  visible INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS why_us (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -119,8 +134,11 @@ CREATE TABLE IF NOT EXISTS enquiries (
 
 CREATE INDEX IF NOT EXISTS idx_home_media_section ON home_media(section, sort_order);
 CREATE INDEX IF NOT EXISTS idx_portfolio_media_project ON portfolio_media(project_id, sort_order);
-`;
 
+CREATE INDEX IF NOT EXISTS idx_service_packages_service
+ON service_packages(service_id, sort_order);
+`;
+  
 const SETTINGS_DEFAULTS: Record<string, string> = {
   studio_name: 'Souradeep Sinha Photography',
   tagline: 'Bengali wedding films & photographs',
